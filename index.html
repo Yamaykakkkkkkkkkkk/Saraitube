@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyTube - Видео платформа</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #0f0f0f;
+            color: #f1f1f1;
+            min-height: 100vh;
+        }
+
+        /* Шапка */
+        .header {
+            background-color: #202020;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #303030;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo::before {
+            content: '▶';
+            background: #ff0000;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .add-button {
+            background: #303030;
+            color: #fff;
+            border: 1px solid #505050;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .add-button:hover {
+            background: #3ea6ff;
+            border-color: #3ea6ff;
+            transform: scale(1.05);
+        }
+
+        /* Контейнер для видео */
+        .container {
+            padding: 24px;
+            max-width: 2200px;
+            margin: 0 auto;
+        }
+
+        /* Сетка видео */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px 16px;
+        }
+
+        /* Карточка видео */
+        .video-card {
+            background: transparent;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .video-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.1);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #181818;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-thumbnail video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .duration {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .video-info {
+            padding: 12px 0;
+        }
+
+        .video-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #f1f1f1;
+            line-height: 1.4;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-meta {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        /* Модальное окно для просмотра */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 1200px;
+            width: 100%;
+            position: relative;
+        }
+
+        .modal video {
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-title {
+            color: white;
+            margin-top: 16px;
+            font-size: 20px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .video-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 16px 12px;
+            }
+            
+            .container {
+                padding: 16px;
+            }
+            
+            .header {
+                padding: 12px 16px;
+            }
+            
+            .logo {
+                font-size: 20px;
+            }
+            
+            .add-button {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Анимация загрузки */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .video-card {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .video-card:nth-child(1) { animation-delay: 0.1s; }
+        .video-card:nth-child(2) { animation-delay: 0.2s; }
+        .video-card:nth-child(3) { animation-delay: 0.3s; }
+        .video-card:nth-child(4) { animation-delay: 0.4s; }
+        .video-card:nth-child(5) { animation-delay: 0.5s; }
+        .video-card:nth-child(6) { animation-delay: 0.6s; }
+    </style>
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="logo">MyTube</div>
+        <button class="add-button" onclick="alert('Чтобы добавить видео:\n1. Загрузите .mp4 файл в папку\n2. Добавьте информацию в массив videos в коде')">
+            + Добавить видео
+        </button>
+    </header>
+
+    <!-- Основной контент -->
+    <div class="container">
+        <div class="video-grid" id="videoGrid">
+            <!-- Видео карточки будут добавлены через JavaScript -->
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра видео -->
+    <div class="modal" id="videoModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">×</button>
+            <video id="modalVideo" controls></video>
+            <h2 class="modal-title" id="modalTitle"></h2>
+        </div>
+    </div>
+
+    <script>
+        // Массив с видео - добавляйте сюда новые видео
+        const videos = [
+            {
+                title: "Красивый закат на море",
+                filename: "video1.mp4",
+                views: "1.2M просмотров",
+                date: "2 дня назад",
+                duration: "4:35"
+            },
+            {
+                title: "Урок программирования для начинающих",
+                filename: "video2.mp4",
+                views: "856K просмотров",
+                date: "1 неделю назад",
+                duration: "12:47"
+            },
+            {
+                title: "Обзор нового смартфона 2024",
+                filename: "video3.mp4",
+                views: "2.5M просмотров",
+                date: "3 дня назад",
+                duration: "8:23"
+            },
+            // Добавьте новые видео здесь по образцу выше
+            // {
+            //     title: "Название видео",
+            //     filename: "video4.mp4",
+            //     views: "100K просмотров",
+            //     date: "1 день назад",
+            //     duration: "5:00"
+            // },
+        ];
+
+        // Функция создания карточки видео
+        function createVideoCard(video, index) {
+            return `
+                <div class="video-card" onclick="openModal('${video.filename}', '${video.title}')">
+                    <div class="video-thumbnail">
+                        <video 
+                            src="${video.filename}" 
+                            muted 
+                            onmouseover="this.play()" 
+                            onmouseout="this.pause(); this.currentTime=0;"
+                            onerror="this.poster='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22%3E%3Crect fill=%22%23282828%22 width=%22320%22 height=%22180%22/%3E%3Ctext fill=%22%23888%22 font-size=%2216%22 font-family=%22Arial%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3EВидео недоступно%3C/text%3E%3C/svg%3E'"
+                        ></video>
+                        <span class="duration">${video.duration}</span>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">${video.title}</h3>
+                        <div class="video-meta">
+                            ${video.views} • ${video.date}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Инициализация страницы
+        function initVideos() {
+            const videoGrid = document.getElementById('videoGrid');
+            videoGrid.innerHTML = videos.map((video, index) => 
+                createVideoCard(video, index)
+            ).join('');
+        }
+
+        // Открытие модального окна
+        function openModal(filename, title) {
+            const modal = document.getElementById('videoModal');
+            const modalVideo = document.getElementById('modalVideo');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            modalVideo.src = filename;
+            modalTitle.textContent = title;
+            modal.classList.add('active');
+            modalVideo.play();
+        }
+
+        // Закрытие модального окна
+        function closeModal() {
+            const modal = document.getElementById('videoModal');
+            const modalVideo = document.getElementById('modalVideo');
+            
+            modal.classList.remove('active');
+            modalVideo.pause();
+            modalVideo.src = '';
+        }
+
+        // Закрытие по клику вне видео
+        document.getElementById('videoModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Закрытие по Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Загрузка видео при загрузке страницы
+        document.addEventListener('DOMContentLoaded', initVideos);
+    </script>
+</body>
+</html>
